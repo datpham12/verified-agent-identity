@@ -1,0 +1,70 @@
+name: Verify Human Identity
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_name:
+        description: "Agent Name"
+        required: true
+        default: "My AI Agent"
+      agent_description:
+        description: "Agent Description"
+        required: true
+        default: "Verified AI Agent Identity"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install ClawHub CLI
+        run: |
+          npm install -g npm
+          npx clawhub@latest --version
+
+      - name: Install Verified Agent Identity Skill
+        run: |
+          npx clawhub@latest install verified-agent-identity
+
+      - name: Install Dependencies
+        run: |
+          if [ -d "scripts" ]; then
+            cd scripts
+            npm install
+            cd ..
+          fi
+
+      - name: Create Ethereum Identity
+        run: |
+          if [ -f "scripts/createNewEthereumIdentity.js" ]; then
+            node scripts/createNewEthereumIdentity.js
+          else
+            echo "createNewEthereumIdentity.js not found"
+          fi
+
+      - name: Link Human to Agent
+        run: |
+          if [ -f "scripts/linkHumanToAgent.js" ]; then
+            node scripts/linkHumanToAgent.js
+          else
+            echo "linkHumanToAgent.js not found"
+          fi
+
+      - name: Commit Identity Files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Generated Verified Agent Identity" || echo "No changes"
+          git push
